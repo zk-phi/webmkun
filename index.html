@@ -21,10 +21,10 @@
 
       <div v-if="selected">
         w: <input type="number" :disabled="running" v-model="w">
-        h: <input type="number" :disabled="running" v-model="h"> ※-1はアス比維持
+        h: <input type="number" :disabled="running" v-model="h"> (-1はアス比維持)
         <select v-model="type" :disabled="running">
           <option value="webm">WebM (VP9 + opus)</option>
-          <option value="mp4">mp4 (H.264 + AAC)</option>
+          <option value="mp4">MP4 (H.264 + AAC)</option>
         </select>
         <button :disabled="running" @click="run">エンコード</button>
       </div>
