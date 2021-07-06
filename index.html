@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+  <head>
+    <title>ウェブエムくん</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Super simple webm converter">
+    <script src='https://unpkg.com/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js'></script>
+    <script src="https://unpkg.com/vue@2.6.14/dist/vue.js"></script>
+  </head>
+
+  <body class="container">
+    <div id="app">
+      <h1>ウェブエムくん</h1>
+      <p>動画を WebM などに変換するよ。あんまり速くないので短い動画向きだよ。</p>
+      <div v-if="loading">Loading FFmpeg core ...</div>
+
+      <input type="file" :disabled="loading || running" @change="load" />
+
+      <div v-if="selected">
+        w: <input type="number" :disabled="running" v-model="w">
+        h: <input type="number" :disabled="running" v-model="h"> ※-1はアス比維持
+        <select v-model="type" :disabled="running">
+          <option value="webm">WebM (VP9 + opus)</option>
+          <option value="mp4">mp4 (H.264 + AAC)</option>
+        </select>
+        <button :disabled="running" @click="run">エンコード</button>
+      </div>
+
+      <div v-if="running">
+        エンコード中 ({{ progress }} %)
+      </div>
+
+      <div v-else-if="res">
+        <video :src="res" controls></video>
+        <p>右クリックで保存</p>
+      </div>
+    </div>
+    <script>
+const vm = new Vue({
+  el: "#app",
+  data: {
+    ffmpeg: null,
+    loading: true,
+    selected: false,
+    running: false,
+    type: "webm",
+    w: 640,
+    h: -1,
+    progress: 0,
+    res: null,
+  },
+  mounted: function () {
+    this.ffmpeg = FFmpeg.createFFmpeg();
+    this.ffmpeg.setProgress(progress => {
+      this.progress = Math.max(0, Math.floor(progress.ratio * 100));
+    });
+    this.ffmpeg.load().then(() => {
+      this.loading = false;
+    });
+  },
+  methods: {
+    load: function (e) {
+      FFmpeg.fetchFile(e.target.files[0]).then(blob => {
+        vm.ffmpeg.FS('writeFile', 'in', blob);
+        vm.selected = true;
+      });
+    },
+    run: function () {
+      vm.running = true;
+      vm.progress = 0;
+      vm.ffmpeg.run(
+        '-i', 'in', '-vf', `scale=${vm.w}:${vm.h}`, '-strict', '-2', `out.${vm.type}`
+      ).then(() => {
+        const data = vm.ffmpeg.FS('readFile', `out.${vm.type}`);
+        vm.res = URL.createObjectURL(new Blob([data.buffer], { type: `video/${vm.type}` }));
+        vm.running = false;
+      });
+    },
+  },
+})
+    </script>
+  </body>
+
+</html>
