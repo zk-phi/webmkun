@@ -30,7 +30,7 @@
       </div>
 
       <div v-if="running">
-        エンコード中 ({{ progress }} %)
+        エンコード中 ({{ progress }} %) : {{ log }}
       </div>
 
       <div v-else-if="res">
@@ -50,12 +50,16 @@ const vm = new Vue({
     w: 640,
     h: -1,
     progress: 0,
+    log: "",
     res: null,
   },
   mounted: function () {
     this.ffmpeg = FFmpeg.createFFmpeg();
     this.ffmpeg.setProgress(progress => {
       this.progress = Math.max(0, Math.floor(progress.ratio * 100));
+    });
+    this.ffmpeg.setLogger(log => {
+      this.log = log.message;
     });
     this.ffmpeg.load().then(() => {
       this.loading = false;
